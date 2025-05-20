@@ -64,4 +64,3 @@ The main configuration file (`config.yaml`) includes settings for:
 
 1. The algorithm initialises a population of YOLO models with random hyperparameters and architecture settings
 2. Each model is trained on the dataset and evaluated for accuracy (mAP) and speed (inference time)
-

@@ -84,7 +84,8 @@ class EvoTrainerLogger:
             generation: Current generation number
             max_generations: Maximum number of generations
         """
-        self.logger.info(f"{"="*20} Generation {generation}/{max_generations} {"="*20}")
+        separator = "=" * 20
+        self.logger.info(f"{separator} Generation {generation}/{max_generations} {separator}")
     
     def log_training_start(self, individual_id: int, genome: dict) -> None:
         """
@@ -143,7 +144,8 @@ class EvoTrainerLogger:
             convergence_reached: Whether convergence was reached
         """
         reason = "convergence reached" if convergence_reached else "maximum generations reached"
-        self.logger.info(f"{"="*20} Evolution complete {"="*20}")
+        separator = "=" * 20
+        self.logger.info(f"{separator} Evolution complete {separator}")
         self.logger.info(f"Completed after {generations} generations ({reason})")
         self.logger.info(f"Best fitness achieved: {best_fitness:.4f}")
     
