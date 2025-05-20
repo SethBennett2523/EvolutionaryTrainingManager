@@ -1,0 +1,3 @@
+[submodule "TrainingAutomation"]
+	path = TrainingAutomation
+	url = git@github.com:SethBennett2523/TrainingAutomation.git

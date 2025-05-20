@@ -1,0 +1,19 @@
+# Core dependencies
+numpy>=1.19.5
+pyyaml>=6.0
+pillow>=8.0.0
+matplotlib>=3.2.0
+opencv-python>=4.1.2
+tqdm>=4.64.0
+
+# Deep learning framework
+torch>=1.7.0
+torchvision>=0.8.1
+
+# YOLO dependencies
+ultralytics>=8.0.0
+
+# Utilities
+albumentations>=1.1.0
+scikit-learn>=0.24.1
+pandas>=1.1.4

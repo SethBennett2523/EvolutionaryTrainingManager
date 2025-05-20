@@ -1,0 +1,90 @@
+# Main configuration for Evolutionary Training Manager
+
+# Paths configuration
+paths:
+  training_automation: "./TrainingAutomation"
+  data_yaml: "./TrainingAutomation/data/data.yaml"
+  output_dir: "./output"
+  checkpoints_dir: "./checkpoints"
+  logs_dir: "./logs"
+
+# Evolution parameters
+evolution:
+  population_size: 10
+  mutation_rate: 0.1
+  crossover_parents: 4
+  survivors_count: 6
+  offspring_count: 4
+  convergence_threshold: 0.01  # 1% threshold for stopping
+  max_generations: 100
+
+# Model parameters
+model:
+  base_type: "yolov8m"
+  
+# Hardware settings
+hardware:
+  device: "auto"  # auto, cuda, rocm, cpu
+  memory_threshold: 0.9  # Maximum VRAM usage as fraction
+  workers: 2  # Number of data loader workers
+
+# Hyperparameter ranges
+hyperparameter_ranges:
+  learning_rate:
+    min: 0.001
+    max: 0.1
+  momentum:
+    min: 0.6
+    max: 0.98
+  weight_decay:
+    min: 0.0001
+    max: 0.01
+  batch_size:
+    min: 4
+    max: 64
+  epochs:
+    min: 20
+    max: 300
+
+# Model architecture parameters
+architecture_params:
+  depth_multiple:
+    min: 0.33
+    max: 1.0
+  width_multiple:
+    min: 0.5
+    max: 1.0
+  num_layers:
+    min: 8
+    max: 20
+  learning_rate: 
+    min: 0.0001
+    max: 0.01
+  batch_size:
+    min: 2
+    max: 64
+  epochs:
+    min: 50
+    max: 300
+  img_size:
+    min: 320
+    max: 640
+    step: 32
+  # Architecture parameters will be defined in model-specific sections
+  
+  # YOLOv8 specific parameters
+  yolov8:
+    # Layer parameters
+    depth_multiple:
+      min: 0.33
+      max: 1.0
+    width_multiple: 
+      min: 0.50
+      max: 1.0
+    # Augmentation parameters
+    mosaic:
+      min: 0.0
+      max: 1.0
+    mixup:
+      min: 0.0
+      max: 0.1
