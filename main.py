@@ -58,6 +58,8 @@ def parse_arguments() -> argparse.Namespace:
                         help="Enable verbose output")
     parser.add_argument('--log-dir', type=str, default='logs',
                         help="Directory for log files")
+    parser.add_argument('--quick-test', action='store_true',
+                        help="Run a quick test: 5 generations, single-epoch models, temporary output.")
     
     return parser.parse_args()
 
@@ -91,6 +93,31 @@ def prepare_environment(args: argparse.Namespace) -> Dict:
         
     if args.device:
         config['hardware']['device'] = args.device
+    
+    # Quick test mode: override config for 5 generations, 1 epoch, temp dirs, and smaller population/selection
+    if getattr(args, 'quick_test', False):
+        import tempfile
+        temp_dir = tempfile.mkdtemp(prefix="evo_quicktest_")
+        config['paths']['output_dir'] = os.path.join(temp_dir, "output")
+        config['paths']['checkpoints_dir'] = os.path.join(temp_dir, "checkpoints")
+        config['paths']['logs_dir'] = os.path.join(temp_dir, "logs")
+        os.makedirs(config['paths']['output_dir'], exist_ok=True)
+        os.makedirs(config['paths']['checkpoints_dir'], exist_ok=True)
+        os.makedirs(config['paths']['logs_dir'], exist_ok=True)
+        config['evolution']['max_generations'] = 5
+        config['hyperparameter_ranges']['epochs'] = {'min': 1, 'max': 2}
+        # Halve population and selection group sizes for quick test
+        pop_size = max(2, config['evolution']['population_size'] // 2)
+        config['evolution']['population_size'] = pop_size
+        config['evolution']['crossover_parents'] = max(2, config['evolution']['crossover_parents'] // 2)
+        config['evolution']['survivors_count'] = max(1, config['evolution']['survivors_count'] // 2)
+        config['evolution']['offspring_count'] = max(1, config['evolution']['offspring_count'] // 2)
+        if 'batch_size' in config['hyperparameter_ranges']:
+            config['hyperparameter_ranges']['batch_size']['min'] = max(1, config['hyperparameter_ranges']['batch_size'].get('min', 1))
+            config['hyperparameter_ranges']['batch_size']['max'] = max(1, config['hyperparameter_ranges']['batch_size'].get('max', 1))
+        if 'model' in config and 'pretrained' in config['model']:
+            config['model']['pretrained'] = False
+        print(f"[Quick Test] Output: {config['paths']['output_dir']}")
     
     # Create output directories
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -220,17 +247,22 @@ def run_evolutionary_training(env: Dict) -> None:
             
             # Calculate statistics
             best_individual = population.get_best_individual()
+            if best_individual is not None:
+                fitness_str = f"{best_individual.fitness:.6f}" if best_individual.fitness is not None else "N/A"
+                map_str = f"{best_individual.map_score:.6f}" if best_individual.map_score is not None else "N/A"
+                logger.info(f"  Best fitness: {fitness_str}")
+                logger.info(f"  Best mAP: {map_str}")
+                logger.info(f"  Best genome: {best_individual.genome}")
+            else:
+                logger.error("No individuals were successfully trained in this generation. Skipping fitness summary.")
             avg_fitness = population.get_average_fitness()
-            
+            avg_fitness_str = f"{avg_fitness:.6f}" if avg_fitness is not None else "N/A"
             # Log results
             logger.info(f"Generation {generation + 1} results:")
-            logger.info(f"  Best fitness: {best_individual.fitness:.6f}")
-            logger.info(f"  Best mAP: {best_individual.map:.6f}")
-            logger.info(f"  Best inference time: {best_individual.inference_time:.2f}ms")
-            logger.info(f"  Average fitness: {avg_fitness:.6f}")
+            logger.info(f"  Average fitness: {avg_fitness_str}")
             
             # Record best fitness
-            best_fitness_history.append(best_individual.fitness)
+            best_fitness_history.append(best_individual.fitness if best_individual else float('nan'))
             
             # Save checkpoint
             checkpoint_manager.save_checkpoint(population, generation + 1)
@@ -299,7 +331,24 @@ def main():
         # Prepare the environment
         logger.info("Preparing environment")
         env = prepare_environment(args)
-        
+
+        # Quick test: print summary and clean up temp dir at end
+        if getattr(args, 'quick_test', False):
+            run_evolutionary_training(env)
+            best = env['config']
+            print("\n[Quick Test Complete]")
+            # Print best model info if available
+            from src.evolution.population import Population
+            pop = Population(env['config'])
+            best_ind = pop.get_best_individual()
+            if best_ind is not None:
+                print(f"Best fitness: {best_ind.fitness}, mAP: {best_ind.map_score}, inference: {best_ind.inference_time}")
+            # Clean up temp dir
+            import shutil
+            temp_dir = os.path.dirname(env['config']['paths']['output_dir'])
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            return
+
         # Validate setup
         validate_setup(env)
         
